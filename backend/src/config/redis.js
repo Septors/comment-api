@@ -1,15 +1,18 @@
 // config/redis.js
-import Redis from "ioredis";
+import IORedis from 'ioredis';
 
-const redisUrl = process.env.REDIS_URL + "?family=0";
+const redisUrl = process.env.REDIS_URL + '?family=0';
 
-const redisClient = new Redis(redisUrl, {
+export const sharedRedis = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
-  tls: redisUrl.startsWith("rediss://") ? {} : undefined,
+  tls: redisUrl.startsWith('rediss://') ? {} : undefined,
 });
 
-redisClient.on("connect", () => console.log("✅ Connected to Redis:", redisUrl));
-redisClient.on("error", err => console.error("Redis error:", err));
+sharedRedis.on('connect', () =>
+  console.log('✅ Connected to Redis:', redisUrl)
+);
+sharedRedis.on('error', err =>
+  console.error('Redis error:', err)
+);
 
-export default redisClient;
