@@ -32,6 +32,9 @@ app.use(cors());
 app.use(helmet());
 app.use(morgan("dev"));
 
+app.get('/',(req,res) =>{
+  res.send("Api is runing");
+})
 app.use("/user", userRoutes);
 app.use("/comments", commentRoutes);
 app.use("/captcha", captchaRoutes);

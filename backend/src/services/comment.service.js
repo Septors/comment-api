@@ -3,8 +3,9 @@ import eventEmitter from "../events/index.js";
 import ApiError from "../utils/apiError.js";
 import * as imageUtils from "../utils/image.utils.js";
 
-const maxWidth = parseInt(process.env.MAX_WIDTH_IMAGE);
-const maxHeight = parseInt(process.env.MAX_HEIGHT_IMAGE);
+const maxWidth = 320;
+const maxHeight = 240;
+
 
 /*Перевіряє розміри файлу за рахунок функці cheImageSize,
 вона приймає обьект файлу з multer.middleware,отримує його мета данні,та звіряє з потрібнимию.*/
@@ -19,6 +20,11 @@ export const createCommentWithoutFile = async (
   data,
   isResizing = false
 ) => {
+  const checkParentComment =await prisma.comment.findUnique({
+    where:{id:data.parentId},
+  });
+  if(!checkParentComment){throw new ApiError(404,"Comment with this id not found")};
+    console.log(checkParentComment)
   const comment = await prisma.comment.create({
     data: {
       ...data,
@@ -33,6 +39,7 @@ export const createCommentWithoutFile = async (
 export const createComment = async (userId, data, fileData, fileType) => {
   const comment = await createCommentWithoutFile(userId, data);
   const filePath = `uploads/${fileData.filename}`;
+   
   const newComment = await prisma.file.create({
     data: {
       userId: userId,
@@ -70,7 +77,8 @@ export const addFileToComment = async (userId, commentId, fileName) => {
 //створення коментарю в залежності від типу файла,а також його розміру.
 export const createCommentWithFile = async (userId, data, fileData) => {
   const typeFile = fileData.mimetype === "text/plain" ? "TEXT" : "IMAGE"; //Перевіряємо типу файлу.
-
+    console.log(maxWidth);
+      console.log( maxHeight)
   //Якщо це файловий текст,то створюємо коментар,файл,підвязуємо файл.
   if (typeFile === "TEXT") {
     await createComment(userId, data, fileData, typeFile);
@@ -80,7 +88,36 @@ export const createCommentWithFile = async (userId, data, fileData) => {
   //Якщо в нормі то створюємо коментар,файл,підвязуємо файл під коментар,а якщо ні то створяємо коментар,передаємо в чергу для зміну черги.
   if (isSizeValid) {
     const newComment = await createComment(userId, data, fileData, typeFile);
-  } 
+
+  }else{
+      const comments = await createCommentWithoutFile(userId, data, true);
+      const { outputPath, outputFileResizeName } = await imageUtils.resizeImage(
+        fileData.path,
+        fileData.filename,
+        maxWidth,
+        maxHeight
+      );
+      const resizeFilePath = `uploads/${outputFileResizeName}`;
+      await prisma.comment.update({
+        where: { id: comments.id },
+        data: {
+          fileName: outputFileResizeName,
+          filePath: resizeFilePath,
+          isResizing: false,
+        },
+      });
+
+      await prisma.file.create({
+        data: {
+          userId,
+          commentId:comments.id,
+          fileName: outputFileResizeName,
+          type: "IMAGE",
+          url: resizeFilePath,
+        },
+      });
+      
+  }
   
 };
 
@@ -131,7 +168,7 @@ export const getLifoComments = async () => {
     where: {
       parentId: null,
     },
-    take: 25,
+    take: 3,
     orderBy: {
       createdAt: "desc",
     },

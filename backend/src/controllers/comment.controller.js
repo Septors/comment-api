@@ -5,10 +5,10 @@ export const createComment = async (req, res) => {
   const commentData = req.body;
   const userId = req.user.id;
   const fileData = req.file;
-
+ 
   if (fileData) {
     await commentService.createCommentWithFile(userId, commentData, fileData);
-
+    console.log(commentData)
     res.status(201).json({ message: "Comment creted" });
   } else {
     const newComment = await commentService.createCommentWithoutFile(
@@ -16,7 +16,6 @@ export const createComment = async (req, res) => {
       commentData
     );
     eventEmitter.emit("commentCreated", newComment);
-    await commentService.lifoCashCommentList(newComment);
     res.status(201).json({ message: "Comment created" });
   }
 };

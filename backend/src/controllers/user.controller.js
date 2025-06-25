@@ -86,8 +86,6 @@ export const userlogout = async (req, res) => {
 
   await cookie.clearTokenCookie(res);
 
-  await userService.sendUserTokenToBlacklist(userToken);
-
   res.status(200).json({ message: "User logout succesfully" });
 };
 

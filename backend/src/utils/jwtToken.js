@@ -2,7 +2,7 @@ import Jwt from "jsonwebtoken";
 
 export const createToken = (uplaod) => {
   const accessToken = Jwt.sign(uplaod, process.env.ACCESS_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "1d",
   });
 
   const refreshToken = Jwt.sign(uplaod, process.env.REFRESH_SECRET, {
