@@ -1,18 +1,21 @@
-
+# ——————————————————————————————
+# Выполняется в каталоге, где находится package.json
 FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# 1. Копируем только package*.json
+COPY backend/package*.json ./
 
+# 2. Устанавливаем зависимости
 RUN npm install --production
 
-COPY . .
+# 3. Копируем весь код
+COPY backend/. .
 
-RUN npx prisma generate
-
-RUN mkdir -p uploads
+# 4. Генерируем Prisma client и создаём папку uploads
+RUN npx prisma generate && mkdir -p uploads
 
 EXPOSE 5000
-
 CMD ["npm", "start"]
+
