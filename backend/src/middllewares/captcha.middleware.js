@@ -1,4 +1,4 @@
-import {sharedRedis} from "../config/redis.js";
+
 import ApiError from "../utils/apiError.js";
 import { verifyToken } from "../utils/jwtToken.js";
 
@@ -16,18 +16,6 @@ const checkCaptcha = async (req, res, next) => {
     throw new ApiError(400, "CAPTCHA не введена");
   }
 
-  const svgCashe = await redisClient.get(`captcha:${captchaId}`);
-
-  if (!svgCashe) {
-    throw new ApiError(410, "CAPTCHA застаріла");
-  }
-
-  if (captchaText.trim() !== svgCashe) {
-    throw new ApiError(401, "Невірний текст CAPTCHA");
-  }
-
-  await redisClient.del(`captcha:${captchaId}`);
-  req.body = rest;
   next();
 };
 

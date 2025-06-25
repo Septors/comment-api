@@ -31,11 +31,4 @@ export function initWebSocket(server) {
     });
   });
 
-  eventEmitter.on("imageResized", (comment) => {
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: "imageResized", data: comment }));
-      }
-    });
-  });
 }

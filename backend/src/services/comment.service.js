@@ -1,7 +1,5 @@
 import prisma from "../config/prisma.js";
-import {sharedRedis}  from "../config/redis.js";
 import eventEmitter from "../events/index.js";
-import { resizeQueue } from "../redis/queues.js";
 import ApiError from "../utils/apiError.js";
 import * as imageUtils from "../utils/image.utils.js";
 
@@ -78,24 +76,12 @@ export const createCommentWithFile = async (userId, data, fileData) => {
     await createComment(userId, data, fileData, typeFile);
     return;
   }
-
   const isSizeValid = await checkSizeFile(fileData.path); //Викликаємо перевірку розміру файлу.
   //Якщо в нормі то створюємо коментар,файл,підвязуємо файл під коментар,а якщо ні то створяємо коментар,передаємо в чергу для зміну черги.
   if (isSizeValid) {
     const newComment = await createComment(userId, data, fileData, typeFile);
-
-    await lifoCashCommentList(newComment);
-  } else {
-    const comment = await createCommentWithoutFile(userId, data, true);
-    await resizeQueue.add("resize-image", {
-      filePath: fileData.path,
-      outPutPath: fileData.filename,
-      width: maxWidth,
-      height: maxHeight,
-      commentId: comment.id,
-      userId,
-    });
-  }
+  } 
+  
 };
 
 //перевірка вхідних данних для фільрації
@@ -121,13 +107,6 @@ export const getFilterComments = async (querySelect) => {
   const { limit, page, skip, sortBy, orderBy, userId } =
     checkQuerySelect(querySelect);
 
-  const filterKey = `comment:filter:${sortBy}:order:${orderBy}:page:${page}:userId:${userId}`;
-
-  const cachedComments = await redisClient.get(filterKey);
-
-  if (cachedComments) {
-    return JSON.parse(cachedComments);
-  }
   const filteredComments = await prisma.comment.findMany({
     where: {
       parentId: null,
@@ -143,27 +122,10 @@ export const getFilterComments = async (querySelect) => {
     },
   });
 
-  await redisClient.set(filterKey, JSON.stringify(filteredComments), "EX", 60);
   return filteredComments;
 };
 
 export const getLifoComments = async () => {
-  const lifoCashKey = "comments:lifo";
-  const lifoCashFilter = await redisClient.lrange(lifoCashKey, 0, -1);
-
-  if (lifoCashFilter.length > 0) {
-    return lifoCashFilter
-      .filter((comm) => !!comm && comm.trim() !== "")
-      .map((comm) => {
-        try {
-          return JSON.parse(comm);
-        } catch (e) {
-          console.warn("⚠️ Invalid JSON in Redis:", comm);
-          return null;
-        }
-      })
-      .filter((comm) => comm !== null);
-  }
 
   const newlifoCollection = await prisma.comment.findMany({
     where: {
@@ -178,45 +140,7 @@ export const getLifoComments = async () => {
       replies: true,
     },
   });
-
-  await redisClient.del(lifoCashKey);
-  if (newlifoCollection.length > 0) {
-    await redisClient.rpush(
-      lifoCashKey,
-      ...newlifoCollection.map((comm) => JSON.stringify(comm))
-    );
-    return newlifoCollection;
-  } else {
-    throw new ApiError(404, "User comment not found in base");
-  }
+  return newlifoCollection;
 };
 
-export const lifoCashCommentList = async (newComment) => {
-  const lifoKey = "comments:lifo";
-  const lifoCacheLength = await redisClient.llen(lifoKey);
-  const lifoCashFilter = await redisClient.lrange(lifoKey, 0, -1);
 
-  if (lifoCacheLength) {
-    await redisClient.lpush(lifoKey, JSON.stringify(newComment));
-    await redisClient.ltrim(lifoKey, 0, 24);
-  } else {
-    const lifoCollection = await prisma.comment.findMany({
-      where: {
-        parentId: null,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      include: {
-        replies: true,
-      },
-      take: 25,
-    });
-
-    const listLifoComment = lifoCollection.map((comm) => JSON.stringify(comm));
-
-    if (listLifoComment.length) {
-      await redisClient.lpush(lifoKey, ...listLifoComment);
-    }
-  }
-};

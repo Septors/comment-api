@@ -1,4 +1,4 @@
-import {sharedRedis} from "../config/redis.js";
+
 import ApiError from "../utils/apiError.js";
 import { verifyToken } from "../utils/jwtToken.js";
 
@@ -7,12 +7,6 @@ const decodeUserToken = async (req, res, next) => {
 
   if (!authToken) {
     throw new ApiError(401, "Unauthoriaztion: Token missing  or invalid");
-  }
-
-  const isBlackList = await redisClient.get(`blackList:${authToken}`);
-
-  if (isBlackList) {
-    throw new ApiError(401, "Access token is blackisted");
   }
 
   const decoded = verifyToken(authToken, "access");
