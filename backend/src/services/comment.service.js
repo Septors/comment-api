@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import redisClient from "../config/redis.js";
+import {sharedRedis}  from "../config/redis.js";
 import eventEmitter from "../events/index.js";
 import { resizeQueue } from "../redis/queues.js";
 import ApiError from "../utils/apiError.js";
