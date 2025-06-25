@@ -1,14 +1,13 @@
 // workers/resize.worker.js
 import { Worker, QueueScheduler } from "bullmq";
 import IORedis from "ioredis";
-import prisma from "../config/prisma.js";
 import { sharedRedis } from "../config/redis.js";
 import { lifoCashCommentList } from "../services/comment.service.js";
 import { resizeImage } from "../utils/image.utils.js";
 
 const queueName = "resize-image";
 
-// ✔ Планировщик задач (обеспечивает работу отложенных / повторяющихся задач)
+// Планировщик задач
 new QueueScheduler(queueName, {
   createClient: (type) => {
     if (type === "bclient") {
@@ -20,7 +19,7 @@ new QueueScheduler(queueName, {
   },
 });
 
-// ✔ Основной воркер
+// Основной воркер
 export const resizeWorker = new Worker(
   queueName,
   async (job) => {
@@ -79,7 +78,7 @@ export const resizeWorker = new Worker(
   }
 );
 
-// 🛡️ Обработка ошибок и логирование
+// Обработка ошибок и логирование
 resizeWorker.on("error", (err) => console.error("Worker error:", err));
 resizeWorker.on("failed", (job, err) =>
   console.error(`Job ${job.id} failed:`, err)
