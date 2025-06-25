@@ -20,11 +20,7 @@ export const createCommentWithoutFile = async (
   data,
   isResizing = false
 ) => {
-  const checkParentComment =await prisma.comment.findUnique({
-    where:{id:data.parentId},
-  });
-  if(!checkParentComment){throw new ApiError(404,"Comment with this id not found")};
-    console.log(checkParentComment)
+
   const comment = await prisma.comment.create({
     data: {
       ...data,
@@ -168,7 +164,7 @@ export const getLifoComments = async () => {
     where: {
       parentId: null,
     },
-    take: 3,
+    take: 25,
     orderBy: {
       createdAt: "desc",
     },
