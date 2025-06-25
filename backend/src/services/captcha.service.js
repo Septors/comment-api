@@ -1,6 +1,6 @@
 import svgCaptcha from "svg-captcha";
 import { v4 as uuidv4 } from "uuid";
-import redisClient from "../config/redis.js";
+import {sharedRedis}  from "../config/redis.js";
 
 const createAndSetCaptcha = async () => {
   const captchaId = uuidv4();
