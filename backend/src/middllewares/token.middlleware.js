@@ -1,4 +1,4 @@
-import redisClient from "../config/redis.js";
+import {sharedRedis} from "../config/redis.js";
 import ApiError from "../utils/apiError.js";
 import { verifyToken } from "../utils/jwtToken.js";
 
