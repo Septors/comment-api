@@ -1,22 +1,21 @@
 import Redis from "ioredis";
 
-// Используем приватный URL, если доступен, иначе публичный (для разработки)
-const redisUrl = process.env.RAILWAY_PRIVATE_DOMAIN 
-  ? `redis://default:${process.env.REDIS_PASSWORD}@${process.env.RAILWAY_PRIVATE_DOMAIN}:6379`
-  : process.env.REDIS_URL; // fallback (для локальной разработки)
-
-if (!redisUrl) {
-  throw new Error("Redis URL не указан!");
-}
-
-const redisClient = new Redis(redisUrl, {
-  tls: process.env.RAILWAY_PRIVATE_DOMAIN ? {} : undefined, // Включаем TLS, если используем приватный домен
-  maxRetriesPerRequest: null,
+const redisConfig = {
+  host: process.env.REDIS_HOST || "localhost",
+  port: parseInt(process.env.REDIS_PORT || "6379"),
+  password: process.env.REDIS_PASSWORD, // если требуется
+  maxRetriesPerRequest: null, // важно для BullMQ
   enableReadyCheck: false,
-});
+};
+
+const redisClient = new Redis(redisConfig);
 
 redisClient.on("error", (err) => {
   console.error("Redis error:", err);
+});
+
+redisClient.on("connect", () => {
+  console.log("✅ Redis connected");
 });
 
 export default redisClient;
