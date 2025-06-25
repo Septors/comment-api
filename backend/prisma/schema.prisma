@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  GUEST
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum TypeFile {
+  TEXT
+  IMAGE
+}
+
+model User {
+  id                  Int      @id @default(autoincrement())
+  userName            String   @default("Anonymous")
+  email               String   @unique
+  password            String?
+  role                UserRole @default(GUEST)
+  currentRefreshToken String?
+
+  profile  Profile?
+  comments Comment[]
+  files    File[]
+  votes    Vote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Profile {
+  id Int @id @default(autoincrement())
+
+  avatar String?
+  about  String?
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id       Int     @id @default(autoincrement())
+
+  userName String  @default("Anonymous")
+  homePage String?
+  email    String
+  text String
+  fileName String?
+  filePath String?
+  isResizing Boolean @default(false)
+
+  userId   Int?
+  parentId Int?
+
+  files File[]
+  votes Vote[]
+
+
+  user    User?     @relation(fields: [userId], references: [id])
+  parent  Comment?  @relation("Commentreplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("Commentreplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model File {
+  id Int @id @default(autoincrement())
+
+  userId    Int
+  commentId Int
+
+  fileName String
+  type     TypeFile
+  url      String
+  content  String?
+
+  comment   Comment  @relation(fields: [commentId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Vote {
+  id Int @id @default(autoincrement())
+
+  userId    Int
+  commentId Int
+
+  user    User    @relation(fields: [userId], references: [id])
+  comment Comment @relation(fields: [commentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, commentId])
+}
