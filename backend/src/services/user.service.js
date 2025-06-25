@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import redisClient from "../config/redis.js";
+import {sharedRedis}  from "../config/redis.js";
 import ApiError from "../utils/apiError.js";
 
 export const checkEmail = async (email) => {
